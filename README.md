@@ -73,7 +73,7 @@ Lightweight contributions welcome:
 - Small PRs (one change per PR)
 - For tuning changes, include before/after KPIs
 
-(Optional) See: `CONTRIBUTING.md`
+(Optional) See: **[CONTRIBUTING](./CONTRIBUTING.md)**.
 
 ## License
 MIT. See **[LICENSE](./LICENSE)**.

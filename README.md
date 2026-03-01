@@ -1,57 +1,79 @@
-# openups-synology-dc-ups
-How-to: Build a low-idle DC UPS for Synology NAS with OpenUPS + LiFePO₄ (NUT logging, tuning, 3D-printed case)
+# OpenUPS DC UPS for Synology (LiFePO₄) — low idle, measurable tuning
 
+How-to: Build a low-idle **DC UPS** for a Synology NAS using **Mini-Box OpenUPS + 12.8 V LiFePO₄**, with **NUT logging**, **tuning KPIs**, and a **3D-printed enclosure**.
 
 ## Build photo
 ![OpenUPS in 3D-printed enclosure mounted on a 12.8V LiFePO4 pack](./images/openups-enclosure.jpg)
-*OpenUPS in a 3D-printed enclosure mounted on a 12.8V LiFePO₄ pack (reference build).*
+*Reference build: OpenUPS in a 3D-printed enclosure mounted on a 12.8 V LiFePO₄ pack.*
 
-# How-to: Low-idle DC UPS for Synology NAS with OpenUPS + LiFePO₄
+## What this is (and why)
+A classic AC UPS chain (AC→DC→AC→DC) often wastes power at idle. This project replaces it with a **DC UPS power-path controller**:
 
-This repo documents a small homelab project to replace a classic AC UPS with a more efficient **DC UPS** setup:
-- **Mini-Box OpenUPS** as DC-UPS / power-path controller
-- **12.8 V LiFePO₄** battery pack (with integrated BMS)
-- **Synology NAS + router + switches** powered from a 12 V bus
-- **Logging + tuning** based on real measurements (NUT/upsc + optional AC plug meter)
-- **Minimal 3D-printed enclosure** (FDM, PLA) for OpenUPS + fuse distribution
+- AC mains → 12 V PSU → **OpenUPS** → 12 V DC bus → NAS / router / switches
+- OpenUPS ↔ USB ↔ Synology DSM (NUT) for status + safe shutdown
+- Logging + tuning based on **measured KPIs**, not “feelings”
 
-Goal: **reduce idle power**, keep safe shutdown behavior, and make tuning reproducible.
+**Goal:** reduce idle power, keep reliable shutdown behavior, and make tuning reproducible.
 
-## Results (example)
-- Idle power of the full setup was reduced significantly vs. an AC UPS chain (measured with a plug meter).
-- After tuning, the battery is not permanently held at high voltage: **rare top-ups**, no prolonged high-voltage dwell.
-
-> Notes:
-> - Values depend on your NAS model, PSU, and load.
-> - `battery.charge` from OpenUPS/NUT can be unreliable; use voltage + events as primary KPIs.
+## Key findings (practical)
+- `battery.charge` / SOC reporting can be **unreliable** depending on firmware/driver; treat it as “nice-to-have”.
+- Use **voltage + charge events** as your primary KPIs.
+- `battery.temperature` is typically **OpenUPS PCB temperature** (not the battery pack).
 
 ## Hardware (reference build)
 - Synology NAS (DS920+ in the reference setup)
 - Mini-Box **OpenUPS** (USB connected to NAS for monitoring)
-- 12.8 V LiFePO₄ pack (e.g., Offgridtec 12.8 V 8 Ah with integrated BMS)
-- 12 V DC distribution with **individual fuses per branch**
+- 12.8 V LiFePO₄ pack (with integrated BMS)
 - 12 V PSU (Synology 100 W adapter used in the reference setup)
+- 12 V distribution with **individual fuses per branch**
 
 ## Architecture (high level)
 AC (mains) → 12 V PSU → OpenUPS → 12 V DC bus → (NAS / router / switches)  
 OpenUPS ↔ USB ↔ Synology DSM (NUT) for status + shutdown
 
 ## Quick start
-1. **Enable UPS support in DSM** and verify the device is visible via `upsc`.
-2. Deploy logging scripts from [`/scripts`](./scripts).
-3. Track KPIs from [`/docs/tuning.md`](./docs/tuning.md).
+1) **DSM UPS integration**
+- Control Panel → Hardware & Power → UPS → Enable UPS support
+- Ensure the OpenUPS is detected and the NAS can read it.
 
-## Documentation
-- Logging: [`/docs/logging.md`](./docs/logging.md)
-- Tuning & KPIs: [`/docs/tuning.md`](./docs/tuning.md)
-- Safety: [`/hardware/safety.md`](./hardware/safety.md)
-- Bill of materials: [`/hardware/bom.md`](./hardware/bom.md)
+2) **Verify via SSH**
+```sh
+upsc -l
+upsc ups | head -n 60
+```
+If your UPS name is not `ups`, use the shown name in the scripts.
+
+3) **Install scripts and schedule logging**
+- Copy scripts from `./scripts` to your NAS (e.g., `/volume1/scripts/`)
+- Use DSM Task Scheduler to run the loggers periodically
+
+Details: **[docs/logging.md](./docs/logging.md)**
+
+## Tuning (KPIs, not guesses)
+This repo focuses on tuning so the battery is **not permanently held at high voltage** (rare top-ups, minimal high-voltage dwell).
+
+Details + KPI definitions: **[docs/tuning.md](./docs/tuning.md)**
+
+## Safety
+This is a power system. Do not improvise fusing, wire gauges, or connectors.
+
+Safety notes: **[hardware/safety.md](./hardware/safety.md)**
+
+## Bill of materials
+Reference BOM: **[hardware/bom.md](./hardware/bom.md)**
+
+## Repo layout
+- `docs/` → logging + tuning
+- `hardware/` → safety + BOM
+- `scripts/` → DSM/NUT log scripts (JSONL + event logger)
+- `images/` → build photos + plots
 
 ## Contributing
-Contributions are welcome, but please keep them lightweight:
+Lightweight contributions welcome:
 - Small PRs (one change per PR)
-- For tuning changes, include **before/after KPIs** (top-ups/week, peak voltage, time ≥13.8 V, PCB temp max)
-- Use GitHub Issues for questions, bugs, and proposals
+- For tuning changes, include before/after KPIs
+
+(Optional) See: `CONTRIBUTING.md`
 
 ## License
-MIT (scripts + docs). See [`LICENSE`](./LICENSE).
+MIT. See **[LICENSE](./LICENSE)**.
